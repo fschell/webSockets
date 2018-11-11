@@ -15,13 +15,13 @@ const wss = new WebSocket.Server({
     },
     server
 });
-const myConnections = {};
+const myClients = {};
 wss.on('connection', (ws, req) => {
     // add wmsId to socket info - so we can use wss.clients.forEach
     const query = url_1.parse(req.url, true).query;
     ws.wmsId = query.id;
     // alternatively, to make it faster, store socket in own entities
-    myConnections[query.id] = ws;
+    myClients[query.id] = ws;
     //connection is up, let's add a simple simple event
     ws.on('message', (message) => {
         //log the received message and send it back to the client
@@ -35,9 +35,12 @@ wss.on('connection', (ws, req) => {
     // simulate status change for id 125
     let i = 0;
     setInterval(() => {
-        if (myConnections['125']) {
-            myConnections['125'].send(`Hello ${ws.wmsId}, something has changed ${++i}`);
+        // direct access via entities
+        if (!myClients['125']) {
+            return;
         }
+        myClients['125'].send(`Hello ${ws.wmsId}, something has changed ${++i}`);
+        // alternative - slower because we have too loop over all socket clients
         // wss.clients.forEach((client: MyWebSocket) => {
         //         if (client.wmsId === '125') {
         //             client.send(`Hello ${ws.wmsId}, something has changed ${++i}`);

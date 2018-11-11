@@ -17,12 +17,13 @@ const wss = new WebSocket.Server( {
     }
     , server });
 
-
+// only needed if we want to add a property
 interface MyWebSocket extends WebSocket {
     wmsId?: string;
 }
+
 type Entities<T> = { [key: string]: T | undefined };
-const myConnections: Entities<MyWebSocket> = {};
+const myClients: Entities<MyWebSocket> = {};
 
 wss.on('connection', (ws: MyWebSocket, req: Request) => {
 
@@ -31,7 +32,7 @@ wss.on('connection', (ws: MyWebSocket, req: Request) => {
     ws.wmsId  = query.id as string;
 
     // alternatively, to make it faster, store socket in own entities
-    myConnections[query.id as string] = ws;
+    myClients[query.id as string] = ws;
 
     //connection is up, let's add a simple simple event
     ws.on('message', (message: string) => {
@@ -52,14 +53,20 @@ wss.on('connection', (ws: MyWebSocket, req: Request) => {
     // simulate status change for id 125
     let i = 0;
     setInterval(() => {
-        if (myConnections['125']) {
-            myConnections['125'].send(`Hello ${ws.wmsId}, something has changed ${++i}`)
+
+        // direct access via entities
+        if (!myClients['125']) {
+            return;
         }
+        myClients['125']!.send(`Hello ${ws.wmsId}, something has changed ${++i}`)
+
+        // alternative - slower because we have too loop over all socket clients
         // wss.clients.forEach((client: MyWebSocket) => {
         //         if (client.wmsId === '125') {
         //             client.send(`Hello ${ws.wmsId}, something has changed ${++i}`);
         //         }
         //     })
+
     }, 2000)
 
 });
